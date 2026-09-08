@@ -56,7 +56,8 @@ class ModelPlain(ModelBase):
         # --------------------------------
         # capas que sí se entrenarán
         # --------------------------------
-        trainable_layers = [            
+        trainable_layers = [
+            "layers.5",            
             "conv_after_body",      # fusión features
             "upsample",             # PixelShuffle
             "conv_last"             # salida final (MUY IMPORTANTE)
