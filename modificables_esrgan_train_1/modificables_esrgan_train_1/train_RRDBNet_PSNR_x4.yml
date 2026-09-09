@@ -1,0 +1,107 @@
+# general settings
+name: 051_RRDBNet_PSNR_x4_f64b23_DIV2K_1000k_B16G1_wandb
+model_type: SRModel
+scale: 3
+num_gpu: 1
+manual_seed: 0
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: DIV2K
+    type: PairedImageDataset
+    dataroot_gt: datasets/train/HR
+    dataroot_lq: datasets/train/LR
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 192
+    use_hflip: true
+    use_rot: true
+
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 8
+    dataset_enlarge_ratio: 100
+    prefetch_mode: ~
+
+  val:
+    name: Set5
+    type: PairedImageDataset
+    dataroot_gt: datasets/test/HR
+    dataroot_lq: datasets/test/LR
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: RRDBNet
+  num_in_ch: 3
+  num_out_ch: 3
+  num_feat: 64
+  num_block: 23
+  num_grow_ch: 32
+  scale: 3 
+
+# path (GUARDADO EN DRIVE)
+path:
+  "experiments_root": f"{progress_folder}/experiments/ESRGAN_{training}",
+  "models": f"{progress_folder}/experiments/ESRGAN_{training}/models",
+  "training_states": f"{progress_folder}/experiments/ESRGAN_{training}/training_states",
+  "log": f"{progress_folder}/experiments/ESRGAN_{training}",
+  "visualization": f"{progress_folder}/experiments/ESRGAN_{training}/visualization",
+
+  pretrain_network_g: /content/BasicSR/experiments/pretrained_models/ESRGAN/ESRGAN_PSNR_SRx4_DF2K_official-150ff491.pth
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  ema_decay: 0.999
+
+  optim_g:
+    type: Adam
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods: [250000, 250000, 250000, 250000]
+    restart_weights: [1, 1, 1, 1]
+    eta_min: !!float 1e-7
+
+  total_iter: 1000000
+  warmup_iter: -1
+
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+# validation settings
+val:
+  val_freq: !!float 5e3
+  save_img: true   # 🔥 GUARDA IMÁGENES EN CADA VALIDACIÓN
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 4
+      test_y_channel: false
+
+# logging settings
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 5e3   # 🔥 CHECKPOINT CADA 5000
+  use_tb_logger: true
+
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
